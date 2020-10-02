@@ -4,5 +4,5 @@ Set input parameters in `input0.txt`
 
 To run dynamics execute: 
   `python parallel_script.py` <br>
-To average populaion over trajectory execute:
+To average population over trajectories execute:
   `python avg.py`
