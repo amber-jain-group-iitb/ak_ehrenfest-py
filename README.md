@@ -1,4 +1,4 @@
-# ehrenfest
+# Ehrenfest
 
 Set input parameters in `input0.txt`
 
