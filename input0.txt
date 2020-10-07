@@ -1,7 +1,7 @@
 1		# iflow     : 1-parallel_cluster #0-serial
 
-3      # ncore 	: set 1 while just plotting PES
-10      # ntraj 	: set 0 while just plotting PES
+10      # ncore 	: set 1 while just plotting PES
+100      # ntraj 	: set 0 while just plotting PES
 #tot_traj = ncore*ntraj
 
 40      # dtc (in au)
