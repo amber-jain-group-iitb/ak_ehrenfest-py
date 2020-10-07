@@ -52,8 +52,8 @@ def ham_diab(q, imodel=11):
 
         # Hamiltonian
         H  = np.zeros([nquant, nquant], dtype=float)
-        H =H+ np.array([[-en/2, vcoup],
-                       [vcoup, en/2]])
+        H =H+ np.array([[en1, vcoup],
+                       [vcoup, en2]])
         # harmonic potential
         H =H+ (0.5* mass * omega**2 * q**2)*np.eye(nquant, dtype=float)
         # nuclear kinetic energy
@@ -180,7 +180,7 @@ def evolve_classical(q, q_dot, force, dtc, ifriction):
         H, delq_H = ham_diab(q)
         force = compute_force(ci, delq_H)
 
-        acc = (c1-c2)*acc + force/mass
+        acc = (c1-c2)*acc + c2*(force/mass)
         q_dot = c0*q_dot+ acc*dtc +delv
 
     return q, q_dot, H, force
@@ -259,7 +259,9 @@ tk2au  = 3.16681E-6				# K to au
 fs2au  = 40.0                   # 41.34137au
 # parameters
 en    = 120.0*eng2au
-vcoup = 87.7*eng2au
+en1   = 410.0*eng2au
+en2   = 530.0*eng2au 
+vcoup = -87.7*eng2au
 kb    = 1.0
 omega = 1060.0*omg2au
 eta   = 10*omega
