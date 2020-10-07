@@ -1,8 +1,16 @@
-10      # ncore : set 1 while just plotting PES
-100      # ntraj : set 0 while just plotting PES
+1		# iflow     : 1-parallel_cluster #0-serial
+
+3      # ncore 	: set 1 while just plotting PES
+10      # ntraj 	: set 0 while just plotting PES
 #tot_traj = ncore*ntraj
 
-40      # dtc   : in au
-40000    # ttime : in au; *40 for au 
+40      # dtc (in au)
+40000    # ttime (in au)
 #nsteps = np.ceil(ttime/dtc).astype('int')
+
 1       # ifriction : set 0  for energy conservation
+
+0       # istate
+1       # iprint
+1       # istr_sci
+1       # istr_en

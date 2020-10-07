@@ -90,20 +90,21 @@ def ham_adiab(H, q):
     return eval, evec
 
 # Quantum Dynamics
-def cdot(ci, H):
-    # return complex(0,-1)*np.dot(H,ci) - vdotd()
+def tdse_cdot(ci, H):
+    iota = complex(0,-1)
+    # return iota/hbar*np.dot(H,ci) - vdotd()
     # return  -vdotd()                      # adiabatic basis
-    return complex(0,-1)*np.dot(H,ci)       # dibatic basis
+    return iota/hbar*np.dot(H,ci)       # dibatic basis
 
 def evolve_quantum(ci, H_tn_1, H_tn_4, dtc):
     # Runge-Kutta 4th order integrator
-    k1 = cdot(ci,H_tn_1)
+    k1 = tdse_cdot(ci,H_tn_1)
     
     H_tn_23 = (H_tn_1 + H_tn_4)/2
-    k2 = cdot(ci+dtc*k1/2, H_tn_23) 
-    k3 = cdot(ci+dtc*k2/2, H_tn_23)  
+    k2 = tdse_cdot(ci+dtc*k1/2, H_tn_23) 
+    k3 = tdse_cdot(ci+dtc*k2/2, H_tn_23)  
     
-    k4 = cdot(ci+dtc*k3, H_tn_4)
+    k4 = tdse_cdot(ci+dtc*k3, H_tn_4)
 
     ci = ci + dtc*(k1+2*k2+2*k3+k4)/6
     return ci
@@ -182,7 +183,6 @@ def evolve_classical(q, q_dot, force, dtc, ifriction):
         acc = (c1-c2)*acc + force/mass
         q_dot = c0*q_dot+ acc*dtc +delv
 
-    # check energy conservation : KE +PE
     return q, q_dot, H, force
 
 # Population readout
@@ -250,11 +250,12 @@ def plot_sum_ci2(tsteps, sum_ci_sq, itraj=1, savefig=0, showfig=0):
 
 
 # unit conversions
+hbar   = 1.0
 clight = 2.99792458E10          # cm/sec
 sec2au = 4.13414E16             # sec2au 
-eng2au = 4.55634E-6                 # cm_1 to au
 omg2au = clight*2*np.pi/sec2au	# cm_1 to au
-tk2au  = 3.16681E-6		# K to au
+eng2au = 4.55634E-6             # cm_1 to au
+tk2au  = 3.16681E-6				# K to au
 fs2au  = 40.0                   # 41.34137au
 # parameters
 en    = 120.0*eng2au
@@ -270,14 +271,20 @@ npart  = 1
 nquant = 2
 mass  = 1836.0*np.ones(npart)
 
+sig_q     = 1/np.sqrt(beta*mass*omega**2)
+sig_q_dot = 1/np.sqrt(beta*mass)
+
 # Read parameters
-param_ll = np.loadtxt('input.txt')
+param_ll = np.loadtxt('input0.txt', dtype=int)
+iflow = param_ll[0]
+# if (iflow == 1):
+# 	param_ll = np.loadtxt('input.txt', dtype=int)
 
 #----------------------------------------------------------#
 # PES
 #----------------------------------------------------------#
 qs, qstep = np.linspace(-0.25, 0.25, 1001, retstep=True, endpoint=True)
-if (param_ll[1] == 0):  # ntraj
+if (param_ll[2] == 0):  	# ntraj
     print(qstep, qs)
     plot_surf(qs)
 #----------------------------------------------------------#
@@ -286,20 +293,22 @@ if (param_ll[1] == 0):  # ntraj
 # Dynamics
 #----------------------------------------------------------#
 
-iseed       = int(param_ll[5])
-ifriction   = int(param_ll[4])
+iseed       = param_ll[-1]
+ifriction   = param_ll[5]
 
-ntraj       = int(param_ll[1])
-dtc         = param_ll[2]   #param_ll[2]
-ttime       = param_ll[3]   #param_ll[3]*fs2au
+ntraj       = int(param_ll[2])
+dtc         = param_ll[3]   #param_ll[2]
+ttime       = param_ll[4]   #param_ll[3]*fs2au
 nsteps = np.ceil(ttime/dtc).astype('int')
 
-sig_q     = 1/np.sqrt(beta*mass*omega**2)
-sig_q_dot = 1/np.sqrt(beta*mass)
+istate	= param_ll[6]
+iprint	= param_ll[7]
+istr_sci= param_ll[8]
+istr_en	= param_ll[9]
 
-sum_ci_sq   = np.zeros([ntraj, nsteps], dtype=float )
-pop         = np.zeros([ntraj, nsteps], dtype=float )
-tot_energy  = np.zeros([ntraj, nsteps], dtype=float )
+sum_ci_sq   = np.zeros([ntraj, nsteps], dtype=float)
+tot_energy  = np.zeros([ntraj, nsteps], dtype=float)
+pop         = np.zeros([ntraj, nsteps], dtype=float)
 for nt in range(ntraj):
     rnd1, rnd2  = gauss_rand_n(), gauss_rand_n()
     q           = (-g/(mass*omega**2)+rnd1*sig_q)   #*np.ones(npart, dtype=float)
@@ -309,27 +318,31 @@ for nt in range(ntraj):
     ci          = np.array([complex(1,0), complex(0,0)]) # nquant*npart
     force       = compute_force(ci, delq_H)         #*npart
     for ns in range(0,nsteps):
-        print(nt, ns, check_ci(ci), check_energy(ci, H))
-        # print(q,q_dot)
-        sum_ci_sq[nt,ns]  = check_ci(ci)
-        tot_energy[nt,ns] = check_energy(ci, H)
-        pop[nt,ns]        = population(ci, istate=0)
-
+        if (iprint==1): print(nt, ns, check_ci(ci), check_energy(ci, H))	# print(q,q_dot)
+        if (istr_sci): sum_ci_sq[nt,ns]  = check_ci(ci)
+        if (istr_en) : tot_energy[nt,ns] = check_energy(ci, H)
+        pop[nt,ns]   = population(ci, istate)
+        # evolve trajectory
         q, q_dot, H_new, force  = evolve_classical(q, q_dot, force, dtc, ifriction)
         ci                      = evolve_quantum(ci, H, H_new, dtc)
         H                       = H_new
-
-        if np.abs(check_ci(ci)-1.0) > 0.001 : break
+        #if np.abs(check_ci(ci)-1.0) > 0.001 : break
+    if (iprint==2): print(nt, ns, check_ci(ci), check_energy(ci, H))
     popsum  = np.sum(pop,axis=0)
     pops    = popsum/ntraj
 #----------------------------------------------------------#
 tsteps= [dtc*i for i in range(0,nsteps)]
-np.savetxt('popsum_'+str(ntraj)+'.dat', np.vstack((tsteps, popsum)).T, fmt='%18.10e')
+if (iflow == 0):
+	# average population
+	np.savetxt('popsum_'+str(ntraj)+'.dat', np.vstack((tsteps, pops)).T, fmt='%18.10e')
+if (iflow == 1):
+	# population_sum
+	np.savetxt('popsum_'+str(ntraj)+'.dat', np.vstack((tsteps, popsum)).T, fmt='%18.10e')
 
 # plots: population; total_energy, |ci|^2 for 2nd trajectory
 plot_pops(tsteps,pops, dtc, ntraj, savefig=1, showfig=0)
-plot_tot_energy(tsteps, tot_energy, savefig=1, showfig=0)	#itraj=1
-plot_sum_ci2(tsteps, sum_ci_sq, savefig=1, showfig=0)		#itraj=1
+if (istr_sci): plot_sum_ci2(tsteps, sum_ci_sq, itraj=1, savefig=1, showfig=0)
+if (istr_en) : plot_tot_energy(tsteps, tot_energy, itraj=1, savefig=1, showfig=0)
 #----------------------------------------------------------#
 
 

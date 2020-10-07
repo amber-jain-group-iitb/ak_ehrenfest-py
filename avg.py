@@ -15,19 +15,21 @@ def plot_pops(tsteps, pops, dtc, ttraj, iwrite=1, savefig=0, showfig=1):
 #===========================================================
 
 p = np.loadtxt("input0.txt", dtype=int)
-ncore = int(p[0])
-ntraj = int(p[1])
+iparallel = p[0]
+ncore = int(p[1])
+ntraj = int(p[2])
 ttraj = ncore*ntraj
-dtc   = p[2]
-ttime = p[3]
+dtc   = p[3]
+ttime = p[4]
 ntsteps = np.ceil(ttime/dtc).astype('int')
 
+assert (iparallel==1)
 popsums = np.zeros(ntsteps)
 for seed in range(1,ncore+1):
-	fpath = './' + str(seed)+ '/popsum_'+str(ntraj)+'.dat'
-	p = np.loadtxt(fpath, dtype='float')
-	tsteps, psum = zip(*p)
-	popsums = np.add(popsums, psum)
+    fpath = './' + str(seed)+ '/popsum_'+str(ntraj)+'.dat'
+    pt = np.loadtxt(fpath, dtype='float')
+    tsteps, psum = zip(*pt)
+    popsums = np.add(popsums, psum)
 popsums_avg = popsums/ttraj
 
 plot_pops(tsteps, popsums_avg, dtc, ttraj, iwrite=1, savefig=1, showfig=0)
